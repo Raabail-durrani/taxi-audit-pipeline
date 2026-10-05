@@ -16,3 +16,4 @@ print("Shape after:", df.shape)                                  # still (6433, 
 print("\nPayment value counts:")
 print(df['payment'].value_counts())  # 'Unknown' should show 44
 
+print(df.isnull().sum())
