@@ -51,3 +51,13 @@ df['pickup_missing'] = mask_o
 print(df.shape)
 
 print(df['pickup_missing'].sum())
+
+#handle dropoff rows
+
+missing_dropoff = df[mask_od]
+print(missing_dropoff.shape)
+
+print(missing_dropoff[['distance', 'fare', 'total'] ])
+mask_dropoff =df['distance'] == 0 
+print(mask_dropoff.sum())
+print((missing_dropoff['distance']==0).sum())
