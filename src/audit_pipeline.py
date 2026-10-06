@@ -17,3 +17,37 @@ print("\nPayment value counts:")
 print(df['payment'].value_counts())  # 'Unknown' should show 44
 
 print(df.isnull().sum())
+#checking if both columns have missing values at exact same row
+mask_o = df['pickup_zone'].isnull()
+
+mask_t = df['pickup_borough'].isnull()
+
+print((mask_o & mask_t).sum())
+
+#checking if both columns have missing values at exact same row
+mask_od = df['dropoff_zone'].isnull()
+mask_td = df['dropoff_borough'].isnull()
+print(((mask_od) & (mask_td)).sum())
+
+#filtering pickup columns
+
+#df['pickup_zone'] = df.groupby('pickup_zone')[['pickup_zone' , 'dropoff_zone', 'distance' , 'fare' , 'total']]
+#print(df['pickup_zone'])
+
+missing_pickup = df[mask_o]
+print(missing_pickup.shape)
+
+print(missing_pickup[['pickup', 'dropoff', 'distance', 'fare', 'total']])
+
+mask_distance = df['distance']== 0
+print(mask_distance.sum())
+
+print((missing_pickup['distance']==0).sum())
+mask_full = df['distance'] == 0
+
+#aggregates = df.groupby(mask_full)['distance'].agg(['sum()' , 'mean()'])
+print(mask_full.groupby(mask_o).agg(['sum' , 'mean']))
+df['pickup_missing'] = mask_o
+print(df.shape)
+
+print(df['pickup_missing'].sum())
