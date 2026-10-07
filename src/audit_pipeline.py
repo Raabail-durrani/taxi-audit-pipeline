@@ -1,63 +1,65 @@
 import pandas as pd
 
-# 1. Load the data
+# ---------- 1. Load the data ----------
 df = pd.read_csv('data/data.csv')
-print("Shape:", df.shape)  
+print("Shape:", df.shape)  # expect (6433, 14)
 
-# 2. Check missing values before cleaning
+# ---------- 2. Fix missing payment values ----------
 print("\nMissing payment before:", df['payment'].isnull().sum())  # expect 44
 
-# 3. Fill missing payment values with a label (keeps the rows and their real data)
+# Label instead of dropping: these rows still have real fare/distance data
 df['payment'] = df['payment'].fillna('Unknown')
 
-# 4. Verify the cleaning worked
-print("\nMissing payment after:", df['payment'].isnull().sum())  # expect 0
-print("Shape after:", df.shape)                                  # still (6433, 14)
-print("\nPayment value counts:")
-print(df['payment'].value_counts())  # 'Unknown' should show 44
+print("Missing payment after:", df['payment'].isnull().sum())  # expect 0
+print("Shape after:", df.shape)                                # still (6433, 14)
+print(df['payment'].value_counts())                            # 'Unknown' should show 44
 
+# ---------- 3. Missing location columns ----------
+print("\nMissing values per column:")
 print(df.isnull().sum())
-#checking if both columns have missing values at exact same row
-mask_o = df['pickup_zone'].isnull()
 
-mask_t = df['pickup_borough'].isnull()
+# True/False masks: True where the value is missing
+pickup_zone_missing = df['pickup_zone'].isnull()
+pickup_borough_missing = df['pickup_borough'].isnull()
+dropoff_zone_missing = df['dropoff_zone'].isnull()
+dropoff_borough_missing = df['dropoff_borough'].isnull()
 
-print((mask_o & mask_t).sum())
+# Do zone and borough go missing on exactly the same rows?
+print("\nPickup zone & borough both missing:", (pickup_zone_missing & pickup_borough_missing).sum())      # expect 26
+print("Dropoff zone & borough both missing:", (dropoff_zone_missing & dropoff_borough_missing).sum())    # expect 45
 
-#checking if both columns have missing values at exact same row
-mask_od = df['dropoff_zone'].isnull()
-mask_td = df['dropoff_borough'].isnull()
-print(((mask_od) & (mask_td)).sum())
+# ---------- 4. Zero-distance trips ----------
+zero_distance = df['distance'] == 0
+print("\nZero-distance trips (all):", zero_distance.sum())  # expect 51
 
-#filtering pickup columns
+# Rows with a missing pickup / dropoff location
+missing_pickup_rows = df[pickup_zone_missing]
+missing_dropoff_rows = df[dropoff_zone_missing]
+print("Missing pickup rows:", missing_pickup_rows.shape)    # expect (26, 14)
+print("Missing dropoff rows:", missing_dropoff_rows.shape)  # expect (45, 14)
 
-#df['pickup_zone'] = df.groupby('pickup_zone')[['pickup_zone' , 'dropoff_zone', 'distance' , 'fare' , 'total']]
-#print(df['pickup_zone'])
+print("Zero-distance among missing pickup:", (missing_pickup_rows['distance'] == 0).sum())    # expect 11
+print("Zero-distance among missing dropoff:", (missing_dropoff_rows['distance'] == 0).sum())  # expect 15
 
-missing_pickup = df[mask_o]
-print(missing_pickup.shape)
+# Share of zero-distance trips: missing vs present location
+print("\nZero-distance by pickup missing:")
+print(zero_distance.groupby(pickup_zone_missing).agg(['sum', 'mean']))
+print("\nZero-distance by dropoff missing:")
+print(zero_distance.groupby(dropoff_zone_missing).agg(['sum', 'mean']))
 
-print(missing_pickup[['pickup', 'dropoff', 'distance', 'fare', 'total']])
+# ---------- 5. Flags ----------
+# Neutral flag: only states what is true (the pickup location is missing)
+df['pickup_missing'] = pickup_zone_missing
+print("\nShape with flag:", df.shape)                       # expect (6433, 15)
+print("Flagged pickup_missing:", df['pickup_missing'].sum())  # expect 26
 
-mask_distance = df['distance']== 0
-print(mask_distance.sum())
+# ---------- 6. Broken trips ----------
+print("\nMissing pickup AND dropoff:", (pickup_zone_missing & dropoff_zone_missing).sum())  # expect 21
 
-print((missing_pickup['distance']==0).sum())
-mask_full = df['distance'] == 0
+# Strongest warning: zero distance AND both locations missing
+broken_trip = zero_distance & pickup_zone_missing & dropoff_zone_missing
+print("Zero distance + both locations missing:", broken_trip.sum())  # expect 11
 
-#aggregates = df.groupby(mask_full)['distance'].agg(['sum()' , 'mean()'])
-print(mask_full.groupby(mask_o).agg(['sum' , 'mean']))
-df['pickup_missing'] = mask_o
-print(df.shape)
+# Fares of these trips: next step is to decide which ones are impossible
+print(df[broken_trip]['fare'])
 
-print(df['pickup_missing'].sum())
-
-#handle dropoff rows
-
-missing_dropoff = df[mask_od]
-print(missing_dropoff.shape)
-
-print(missing_dropoff[['distance', 'fare', 'total'] ])
-mask_dropoff =df['distance'] == 0 
-print(mask_dropoff.sum())
-print((missing_dropoff['distance']==0).sum())
