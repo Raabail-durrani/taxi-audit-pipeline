@@ -63,3 +63,5 @@ print("Zero distance + both locations missing:", broken_trip.sum())  # expect 11
 # Fares of these trips: next step is to decide which ones are impossible
 print(df[broken_trip]['fare'])
 
+distance_above_zero = df['distance'] > 0
+print(df[distance_above_zero]['fare'].describe())
