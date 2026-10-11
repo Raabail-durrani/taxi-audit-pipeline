@@ -66,6 +66,8 @@ print(df[broken_trip]['fare'])
 distance_above_zero = df['distance'] > 0
 print(df[distance_above_zero]['fare'].describe())
 
-fare_cutoff =df[broken_trip]['fare'] > 10
-mask_fare_cutoff = df[fare_cutoff]
-print(mask_fare_cutoff)
+fare_cutoff = 10
+fare_above_cutoff = df['fare'] > fare_cutoff
+df['impossible_fare'] = broken_trip & fare_above_cutoff
+print('Impossible-fare trips: ', df['impossible_fare'].sum())
+print(df.shape)
