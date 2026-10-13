@@ -71,3 +71,41 @@ fare_above_cutoff = df['fare'] > fare_cutoff
 df['impossible_fare'] = broken_trip & fare_above_cutoff
 print('Impossible-fare trips: ', df['impossible_fare'].sum())
 print(df.shape)
+
+print(df.duplicated().sum())
+print(df.dtypes)
+
+df['pickup'] = pd.to_datetime(df['pickup'])
+
+df['dropoff'] = pd.to_datetime(df['dropoff'])
+
+print(df.dtypes)
+df['duration'] = df['dropoff'] - df['pickup']
+
+print(df['duration'].head())
+
+df['duration_seconds']= df['duration'].dt.seconds
+
+print(df['duration_seconds'].head())
+print(df['duration_seconds'].describe())
+
+df['trips_below_one_minute'] = df['duration_seconds'] < 60
+print(df['trips_below_one_minute'].sum())
+short_trips = df[df['trips_below_one_minute']]
+
+print(short_trips.shape)
+
+print(short_trips[['duration_seconds', 'distance', 'fare']].sort_values('fare', ascending=False).head(10))
+short_and_impossible = (df['trips_below_one_minute']) & (df['impossible_fare'])
+print(short_and_impossible.sum())
+
+short_trip_fare_cutoff = 15
+fare_above_short_trip_cutoff = df['fare'] > short_trip_fare_cutoff
+
+df['trip_below_minute_fare_above_normal']=  (df['trips_below_one_minute']) & (fare_above_short_trip_cutoff) 
+
+print('trips that are below 1 minute and have large fares: ' , df['trip_below_minute_fare_above_normal'].sum())
+
+df['review_needed'] = (df['pickup_missing']) | (df['impossible_fare'] ) | (df['trip_below_minute_fare_above_normal'] )
+
+print('to be reviewed: ', df['review_needed'].sum())
