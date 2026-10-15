@@ -4,7 +4,7 @@ import pandas as pd
 df = pd.read_csv('data/data.csv')
 print("Shape:", df.shape)  
 
-# ---------- 2. Fix missing payment values ----------
+# 2. Fix missing payment values 
 print("\nMissing payment before:", df['payment'].isnull().sum()) 
 
 # Label instead of dropping: these rows still have real fare/distance data
@@ -14,7 +14,7 @@ print("Missing payment after:", df['payment'].isnull().sum())
 print("Shape after:", df.shape)                               
 print(df['payment'].value_counts())                           
 
-# ---------- 3. Missing location columns ----------
+# 3. Missing location columns 
 print("\nMissing values per column:")
 print(df.isnull().sum())
 
@@ -28,7 +28,7 @@ dropoff_borough_missing = df['dropoff_borough'].isnull()
 print("\nPickup zone & borough both missing:", (pickup_zone_missing & pickup_borough_missing).sum())  
 print("Dropoff zone & borough both missing:", (dropoff_zone_missing & dropoff_borough_missing).sum()) 
 
-# ---------- 4. Zero-distance trips ----------
+# 4. Zero-distance trips
 zero_distance = df['distance'] == 0
 print("\nZero-distance trips (all):", zero_distance.sum()) 
 
@@ -47,13 +47,13 @@ print(zero_distance.groupby(pickup_zone_missing).agg(['sum', 'mean']))
 print("\nZero-distance by dropoff missing:")
 print(zero_distance.groupby(dropoff_zone_missing).agg(['sum', 'mean']))
 
-# ---------- 5. Flags ----------
+# 5. Flags 
 # Neutral flag: only states what is true (the pickup location is missing)
 df['pickup_missing'] = pickup_zone_missing
 print("\nShape with flag:", df.shape)                       
 print("Flagged pickup_missing:", df['pickup_missing'].sum()) 
 
-# ---------- 6. Broken trips ----------
+# 6. Broken trips 
 print("\nMissing pickup AND dropoff:", (pickup_zone_missing & dropoff_zone_missing).sum())  # expect 21
 
 # Strongest warning: zero distance AND both locations missing
@@ -109,3 +109,38 @@ print('trips that are below 1 minute and have large fares: ' , df['trip_below_mi
 df['review_needed'] = (df['pickup_missing']) | (df['impossible_fare'] ) | (df['trip_below_minute_fare_above_normal'] )
 
 print('to be reviewed: ', df['review_needed'].sum())
+
+twentyfive_percent_distance = df['distance'].quantile(0.25)
+seventyfive_percent_distance = df['distance'].quantile(0.75)
+
+iqr = seventyfive_percent_distance - twentyfive_percent_distance
+
+print(iqr)
+
+lower_limit = twentyfive_percent_distance - (1.5 * iqr)
+upper_limit = seventyfive_percent_distance + (1.5 * iqr)
+print(twentyfive_percent_distance - (1.5 * iqr))
+print(seventyfive_percent_distance + (1.5 * iqr))
+
+df['distance_outlier'] = df['distance'] > upper_limit
+
+distance_outlier_rows = df[df['distance_outlier']]
+print(distance_outlier_rows.shape)
+print(distance_outlier_rows[['distance', 'fare', 'duration_seconds']].describe())
+
+# 7. Business insights
+print("\nTrips flagged for review:", df['review_needed'].sum())
+print("Distance outliers:", df['distance_outlier'].sum())
+
+print("\nAverage fare by pickup borough:")
+print(df.groupby('pickup_borough')['fare'].mean().round(2))
+
+print("\nAverage tip by payment type (cash tips are not recorded):")
+print(df.groupby('payment')['tip'].mean().round(2))
+
+print("\nTrips per hour of day:")
+print(df.groupby(df['pickup'].dt.hour)['fare'].count())
+
+# 8. Export the cleaned data (the raw file stays untouched)
+df.to_csv('data/cleaned_trips.csv', index=False)
+print("\nSaved cleaned data:", df.shape)
